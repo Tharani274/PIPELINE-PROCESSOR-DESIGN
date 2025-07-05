@@ -17,4 +17,6 @@ The pipeline_cpu Verilog module implements a compact, four-stage pipelined proce
 
 OUTPUT
 
+<img width="1342" height="636" alt="Image" src="https://github.com/user-attachments/assets/ac40e15f-c23f-47ce-b6da-7230c6ba59f4" />
+
 
