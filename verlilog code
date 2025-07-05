@@ -1,0 +1,53 @@
+module pipeline_cpu (
+    input wire clk,
+    input wire reset
+);
+    reg [15:0] instr_mem [0:15]; // 16 instructions max
+    reg [7:0] reg_file [0:7]; // 8 general-purpose registers
+    reg [7:0] data_mem [0:255]; // 256 bytes of data memory
+    reg [15:0] IF_ID_instr;
+    reg [2:0] ID_EX_rs1, ID_EX_rs2, ID_EX_rd;
+    reg [1:0] ID_EX_opcode;
+    reg [7:0] ID_EX_data1, ID_EX_data2;
+    reg [7:0] EX_WB_result;
+    reg [2:0] EX_WB_rd;
+    reg EX_WB_write_enable;
+    reg [3:0] pc;
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            pc <= 0;
+            IF_ID_instr <= 0;
+        end else begin
+            IF_ID_instr <= instr_mem[pc];
+            pc <= pc + 1;
+        end
+    end 
+    wire [3:0] opcode = IF_ID_instr[15:12];
+    wire [2:0] rs1 = IF_ID_instr[11:9];
+    wire [2:0] rs2 = IF_ID_instr[8:6];
+    wire [2:0] rd = IF_ID_instr[5:3];
+    always @(posedge clk) begin
+        ID_EX_opcode <= opcode[1:0]; // Only 2 bits used for opcode
+        ID_EX_rs1 <= rs1;
+        ID_EX_rs2 <= rs2;
+        ID_EX_rd <= rd;
+        ID_EX_data1 <= reg_file[rs1];
+        ID_EX_data2 <= reg_file[rs2];
+    end  
+    reg [7:0] alu_result;
+    always @(posedge clk) begin
+        case (ID_EX_opcode)
+            2'b00: alu_result <= ID_EX_data1 + ID_EX_data2; // ADD
+            2'b01: alu_result <= ID_EX_data1 - ID_EX_data2; // SUB
+            2'b10: alu_result <= data_mem[ID_EX_data1]; // LOAD from memory
+            default: alu_result <= 8'h00;
+        endcase
+        EX_WB_result <= alu_result;
+        EX_WB_rd <= ID_EX_rd;
+        EX_WB_write_enable <= 1; // Enable write-back
+    end
+    always @(posedge clk) begin
+        if (EX_WB_write_enable)
+            reg_file[EX_WB_rd] <= EX_WB_result;
+    end
+endmodule
